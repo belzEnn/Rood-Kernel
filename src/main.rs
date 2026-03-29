@@ -3,15 +3,16 @@
 
 mod framebuffer;
 mod keyboard;
+mod shell;
 
 use bootloader_api::{entry_point, BootInfo};
 use core::panic::PanicInfo;
-use framebuffer::{GREEN, WHITE, RED};
+use framebuffer::{GREEN, WHITE, RED, YELLOW};
 
 entry_point!(kernel_main);
 
 fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    // init framebuffer
+    // Init framebuffer
     let fb   = boot_info.framebuffer.as_mut().unwrap();
     let info = fb.info();
 
@@ -25,10 +26,12 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
             info.pixel_format,
         );
 
-        framebuffer::print_str(b"Rood\n", RED);
-        framebuffer::print_str(b"Hello, World!\n\n",   GREEN);
-        framebuffer::print_str(b"> ",                  WHITE);
+        // Boot message
+        framebuffer::print_str(b"Rood\n", YELLOW);
+        framebuffer::print_str(b"Type 'help' for available commands\n\n", WHITE);
+        framebuffer::print_str(b"> ", WHITE);
 
+        // Main loop
         loop {
             if let Some(sc) = keyboard::try_read_scancode() {
                 keyboard::handle_scancode(sc);
