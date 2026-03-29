@@ -68,7 +68,7 @@ unsafe fn draw_char(col: usize, row: usize, ch: u8, color: (u8, u8, u8)) {
     let py = row * CHAR_H;
     for (y, &bits) in bitmap.iter().enumerate() {
         for x in 0..8usize {
-            if bits & (0x80 >> x) != 0 {
+            if bits & (0x01 << x) != 0 {
                 put_pixel(px + x, py + y, color.0, color.1, color.2);
             } else {
                 put_pixel(px + x, py + y, 0, 0, 0);
@@ -111,4 +111,12 @@ pub unsafe fn print_byte(ch: u8, color: (u8, u8, u8)) {
 /// Print a byte string with the specified color.
 pub unsafe fn print_str(s: &[u8], color: (u8, u8, u8)) {
     for &b in s { print_byte(b, color); }
+}
+
+// backspace
+pub unsafe fn backspace() {
+    if CURSOR_COL > 0 {
+        CURSOR_COL -= 1;
+        draw_char(CURSOR_COL, CURSOR_ROW, b' ', BLACK);
+    }
 }

@@ -1,8 +1,0 @@
-[package]
-name = "rs-runner"
-version = "0.1.0"
-edition = "2021"
-description = "Build tool: wraps RS-kernel binary into a bootable disk image and launches QEMU"
-
-[dependencies]
-bootloader = { version = "0.11", features = ["bios"] }
