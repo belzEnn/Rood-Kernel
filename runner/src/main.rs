@@ -1,12 +1,15 @@
-use bootloader::BiosBoot;
+use bootloader::{BiosBoot, UefiBoot};
 use std::path::PathBuf;
 
 fn main() {
     let kernel_path = PathBuf::from(
         std::env::args()
             .nth(1)
-            .expect("Usage: rs-runner <path-to-kernel-binary>"),
+            .expect("Usage: rs-runner <path-to-kernel-binary> [bios|uefi]"),
     );
+
+    // Режим загрузки / Boot mode (второй аргумент, по умолчанию bios)
+    let mode = std::env::args().nth(2).unwrap_or("bios".to_string());
 
     if !kernel_path.exists() {
         eprintln!("Kernel binary not found: {}", kernel_path.display());
@@ -16,20 +19,43 @@ fn main() {
 
     let out_path = PathBuf::from("disk.img");
 
+    println!("Boot mode: {}", mode);
     println!("Creating disk image from {}...", kernel_path.display());
-    BiosBoot::new(&kernel_path)
-        .create_disk_image(&out_path)
-        .expect("Failed to create disk image");
-    println!("Disk image created: {}", out_path.display());
 
+    match mode.as_str() {
+        "uefi" => {
+            UefiBoot::new(&kernel_path)
+                .create_disk_image(&out_path)
+                .expect("Failed to create UEFI disk image");
+        }
+        _ => {
+            BiosBoot::new(&kernel_path)
+                .create_disk_image(&out_path)
+                .expect("Failed to create BIOS disk image");
+        }
+    }
+
+    println!("Disk image created: {}", out_path.display());
     println!("Launching QEMU...");
+
+    let mut qemu_args = vec![
+        "-drive".to_string(),
+        format!("format=raw,file={}", out_path.display()),
+        "-m".to_string(), "128M".to_string(),
+        "-no-reboot".to_string(),
+        "-no-shutdown".to_string(),
+    ];
+
+    // UEFI requires OVMF firmware
+    if mode == "uefi" {
+        qemu_args.extend([
+        "-bios".to_string(),
+        "/usr/share/edk2/x64/OVMF.4m.fd".to_string(),
+        ]);
+    }
+
     let status = std::process::Command::new("qemu-system-x86_64")
-        .args([
-            "-drive", &format!("format=raw,file={}", out_path.display()),
-            "-m", "64M",
-            "-no-reboot",
-            "-no-shutdown",
-        ])
+        .args(&qemu_args)
         .status()
         .expect("Failed to launch QEMU. Is it installed?");
 
