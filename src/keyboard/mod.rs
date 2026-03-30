@@ -1,6 +1,6 @@
 mod scancodes;
 use scancodes::scancode_to_char;
-use crate::framebuffer::{self, WHITE, GREEN};
+use crate::framebuffer::{self, WHITE, GREEN, YELLOW};
 use crate::shell;
 
 // ps/2 ports

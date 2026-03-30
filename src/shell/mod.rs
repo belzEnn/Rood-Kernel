@@ -1,15 +1,14 @@
-// Модуль оболочки / Shell module
+// Shell module
 
 mod builtin;
 mod system;
 mod display;
+mod files;
 
 use crate::framebuffer::{self, WHITE, RED};
 
-// Max number of arguments
 pub const MAX_ARGS: usize = 8;
 
-// Split input into command and arguments
 pub fn parse(input: &[u8]) -> (&[u8], [&[u8]; MAX_ARGS], usize) {
     let mut parts: [&[u8]; MAX_ARGS] = [b""; MAX_ARGS];
     let mut count = 0;
@@ -19,11 +18,9 @@ pub fn parse(input: &[u8]) -> (&[u8], [&[u8]; MAX_ARGS], usize) {
     for i in 0..input.len() {
         let is_space = input[i] == b' ';
         if !is_space && !in_word {
-            // Word start
             start = i;
             in_word = true;
         } else if is_space && in_word {
-            // Word end
             if count < MAX_ARGS {
                 parts[count] = &input[start..i];
                 count += 1;
@@ -31,7 +28,6 @@ pub fn parse(input: &[u8]) -> (&[u8], [&[u8]; MAX_ARGS], usize) {
             in_word = false;
         }
     }
-    // Last word
     if in_word && count < MAX_ARGS {
         parts[count] = &input[start..];
         count += 1;
@@ -41,9 +37,7 @@ pub fn parse(input: &[u8]) -> (&[u8], [&[u8]; MAX_ARGS], usize) {
     (cmd, parts, count)
 }
 
-// Execute a command
 pub unsafe fn execute(input: &[u8]) {
-    // Skip empty input
     if input.is_empty() || input.iter().all(|&b| b == b' ') {
         return;
     }
@@ -51,18 +45,26 @@ pub unsafe fn execute(input: &[u8]) {
     let (cmd, args, argc) = parse(input);
 
     match cmd {
-        // Builtin
+        // Builtin 
         b"help"     => builtin::help(),
         b"clear"    => builtin::clear(),
         b"echo"     => builtin::echo(args, argc),
-
         // System
         b"uname"    => system::uname(),
-
+        b"reboot"   => system::reboot(),
+        b"shutdown" => system::shutdown(),
         // Display
         b"color"    => display::color(args, argc),
-
-        // Unknown command
+        // Filesystem
+        b"ls"       => files::ls(),
+        b"cat"      => files::cat(args, argc),
+        b"mkdir"    => files::mkdir(args, argc),
+        b"touch"    => files::touch(args, argc),
+        b"rm"       => files::rm(args, argc),
+        b"cd"       => files::cd(args, argc),
+        b"pwd"      => files::pwd(),
+        b"write"    => files::write(args, argc),
+        // Unknown
         _ => {
             framebuffer::print_str(b"Unknown command: ", RED);
             framebuffer::print_str(cmd, RED);

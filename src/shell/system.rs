@@ -43,3 +43,15 @@ pub unsafe fn reboot() {
 
     loop { core::arch::asm!("hlt"); }
 }
+
+// Shutdown via QEMU port / Выключение через порт QEMU
+pub unsafe fn shutdown() {
+    framebuffer::print_str(b"Shutting down...\n", RED);
+    core::arch::asm!(
+        "out dx, ax",
+        in("dx") 0x604u16,
+        in("ax") 0x2000u16,
+        options(nomem, nostack)
+    );
+    loop { core::arch::asm!("hlt"); }
+}

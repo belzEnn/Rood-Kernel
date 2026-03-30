@@ -1,22 +1,28 @@
 #![no_std]
 #![no_main]
+#![feature(alloc_error_handler)]
 
+extern crate alloc;
+
+mod allocator;
 mod framebuffer;
+mod fs;
 mod keyboard;
 mod shell;
 
 use bootloader_api::{entry_point, BootInfo};
 use core::panic::PanicInfo;
-use framebuffer::{GREEN, WHITE, RED, YELLOW};
+use framebuffer::{WHITE, YELLOW};
 
 entry_point!(kernel_main);
 
 fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    // Init framebuffer
     let fb   = boot_info.framebuffer.as_mut().unwrap();
     let info = fb.info();
 
     unsafe {
+        allocator::init();
+
         framebuffer::init(
             fb.buffer_mut().as_mut_ptr(),
             info.width,
@@ -26,8 +32,10 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
             info.pixel_format,
         );
 
+        fs::init();
+
         // Boot message
-        framebuffer::print_str(b"Rood\n", YELLOW);
+        framebuffer::print_str(b"Rood OS\n", YELLOW);
         framebuffer::print_str(b"Type 'help' for available commands\n\n", WHITE);
         framebuffer::print_str(b"> ", WHITE);
 
@@ -45,5 +53,11 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
+    loop {}
+}
+
+// Allocation error handler
+#[alloc_error_handler]
+fn alloc_error(_layout: alloc::alloc::Layout) -> ! {
     loop {}
 }
