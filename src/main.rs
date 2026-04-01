@@ -9,6 +9,7 @@ mod framebuffer;
 mod fs;
 mod keyboard;
 mod shell;
+mod drivers;
 
 use bootloader_api::{entry_point, BootInfo};
 use core::panic::PanicInfo;

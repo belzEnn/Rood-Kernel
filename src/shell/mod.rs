@@ -53,6 +53,7 @@ pub unsafe fn execute(input: &[u8]) {
         b"uname"    => system::uname(),
         b"reboot"   => system::reboot(),
         b"shutdown" => system::shutdown(),
+        b"diskinfo" => system::diskinfo(),
         // Display
         b"color"    => display::color(args, argc),
         // Filesystem
@@ -64,6 +65,7 @@ pub unsafe fn execute(input: &[u8]) {
         b"cd"       => files::cd(args, argc),
         b"pwd"      => files::pwd(),
         b"write"    => files::write(args, argc),
+        
         // Unknown
         _ => {
             framebuffer::print_str(b"Unknown command: ", RED);

@@ -8,7 +8,7 @@ fn main() {
             .expect("Usage: rs-runner <path-to-kernel-binary> [bios|uefi]"),
     );
 
-    // Режим загрузки / Boot mode (второй аргумент, по умолчанию bios)
+    // Boot mode (defualt bios)
     let mode = std::env::args().nth(2).unwrap_or("bios".to_string());
 
     if !kernel_path.exists() {
@@ -41,6 +41,8 @@ fn main() {
     let mut qemu_args = vec![
         "-drive".to_string(),
         format!("format=raw,file={}", out_path.display()),
+        "-drive".to_string(),
+        "format=raw,file=hdd.img,if=ide,media=disk".to_string(),
         "-m".to_string(), "128M".to_string(),
         "-no-reboot".to_string(),
         "-no-shutdown".to_string(),

@@ -14,6 +14,7 @@ pub unsafe fn help() {
     framebuffer::print_str(b"  reboot             - reboot\n", WHITE);
     framebuffer::print_str(b"  shutdown           - power off\n", WHITE);
     framebuffer::print_str(b"=== Filesystem ===\n", YELLOW);
+    framebuffer::print_str(b"  diskinfo          - ATA disk info\n", WHITE);
     framebuffer::print_str(b"  ls                - list files\n", WHITE);
     framebuffer::print_str(b"  pwd               - current directory\n", WHITE);
     framebuffer::print_str(b"  cd <dir>          - change directory\n", WHITE);

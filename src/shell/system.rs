@@ -1,4 +1,4 @@
-// uname, reboot, shutdown
+// uname, reboot, shutdown, diskinfo
 
 use crate::framebuffer::{self, WHITE, GREEN, RED};
 
@@ -54,4 +54,42 @@ pub unsafe fn shutdown() {
         options(nomem, nostack)
     );
     loop { core::arch::asm!("hlt"); }
+}
+
+// Информация о диске / Disk info
+pub unsafe fn diskinfo() {
+    use crate::drivers::disk::ata;
+    use crate::framebuffer::{self, WHITE, GREEN, RED, YELLOW};
+
+    // Проверяем Primary Master / Check Primary Master
+    if ata::detect_drive(0xA0) {
+        framebuffer::print_str(b"Disk:   ATA Primary Master\n", GREEN);
+        framebuffer::print_str(b"Status: OK\n", GREEN);
+    // Проверяем Primary Slave / Check Primary Slave
+    } else if ata::detect_drive(0xB0) {
+        framebuffer::print_str(b"Disk:   ATA Primary Slave\n", GREEN);
+        framebuffer::print_str(b"Status: OK\n", GREEN);
+    } else {
+        framebuffer::print_str(b"No disk detected\n", RED);
+        return;
+    }
+
+    // Читаем первый сектор чтобы проверить / Read first sector to verify
+    let mut buf = [0u8; ata::SECTOR_SIZE];
+    match ata::read_sector(0, &mut buf) {
+        Ok(_) => {
+            framebuffer::print_str(b"Sector: 512 bytes\n", WHITE);
+            // Проверяем boot signature / Check boot signature
+            if buf[510] == 0x55 && buf[511] == 0xAA {
+                framebuffer::print_str(b"Boot:   bootable\n", YELLOW);
+            } else {
+                framebuffer::print_str(b"Boot:   not bootable\n", WHITE);
+            }
+        }
+        Err(e) => {
+            framebuffer::print_str(b"Read:   error - ", RED);
+            framebuffer::print_str(e.as_bytes(), RED);
+            framebuffer::print_byte(b'\n', WHITE);
+        }
+    }
 }
