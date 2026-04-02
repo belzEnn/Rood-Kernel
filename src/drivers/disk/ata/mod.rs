@@ -29,7 +29,18 @@ const STATUS_BSY: u8 = 0x80; // Busy
 
 pub const SECTOR_SIZE: usize = 512;
 
-// Port helpers ─────────────────────────
+// Active drive (0xA0 = Master, 0xB0 = Slave)
+static mut ACTIVE_DRIVE: u8 = 0xA0;
+
+pub unsafe fn set_active_drive(drive: u8) {
+    ACTIVE_DRIVE = drive;
+}
+
+pub unsafe fn get_active_drive() -> u8 {
+    ACTIVE_DRIVE
+}
+
+// Port helpers
 
 unsafe fn inb(port: u16) -> u8 {
     let v: u8;
@@ -71,7 +82,7 @@ unsafe fn wait_drq() -> Result<(), &'static str> {
 
 // Select Primary Master and set LBA
 unsafe fn select_lba(lba: u32) {
-    outb(PORT_DRIVE,        0xE0 | ((lba >> 24) as u8 & 0x0F));
+    outb(PORT_DRIVE, ACTIVE_DRIVE | ((lba >> 24) as u8 & 0x0F));
     outb(PORT_SECTOR_COUNT, 1);
     outb(PORT_LBA_LOW,      (lba & 0xFF) as u8);
     outb(PORT_LBA_MID,      ((lba >> 8)  & 0xFF) as u8);
