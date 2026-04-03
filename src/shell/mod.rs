@@ -53,7 +53,7 @@ pub unsafe fn execute(input: &[u8]) {
         b"uname"    => system::uname(),
         b"reboot"   => system::reboot(),
         b"shutdown" => system::shutdown(),
-        b"diskinfo" => system::diskinfo(),
+        b"diskinfo" => system::diskinfo(args, argc),
         // Display
         b"color"    => display::color(args, argc),
         // Filesystem

@@ -195,6 +195,9 @@ pub unsafe fn init() {
         parent:    0,
     });
 
+    let _ = save();
+    Err(e) => {
+    }
 }
 
 // Public API

@@ -56,10 +56,29 @@ pub unsafe fn shutdown() {
     loop { core::arch::asm!("hlt"); }
 }
 
-// Информация о диске / Disk info
-pub unsafe fn diskinfo() {
+// Disk info
+pub unsafe fn diskinfo(args: [&[u8]; crate::shell::MAX_ARGS], argc: usize) {
     use crate::drivers::disk::ata;
     use crate::framebuffer::{self, WHITE, GREEN, RED, YELLOW};
+
+    // Check -v flag
+    let verbose = argc > 1 && args[1] == b"-v";
+
+    if verbose {
+        let status = crate::drivers::port::PortRead::<u8>::new(0x1F7).read();
+        framebuffer::print_str(b"Raw status: ", WHITE);
+        let hex = ata::byte_to_hex(status);
+        framebuffer::print_byte(hex[0], YELLOW);
+        framebuffer::print_byte(hex[1], YELLOW);
+        framebuffer::print_byte(b'\n', WHITE);
+        framebuffer::print_str(b"Master: ", WHITE);
+        framebuffer::print_byte(if ata::detect_drive(0xA0) { b'Y' } else { b'N' }, WHITE);
+        framebuffer::print_byte(b'\n', WHITE);
+        framebuffer::print_str(b"Slave:  ", WHITE);
+        framebuffer::print_byte(if ata::detect_drive(0xB0) { b'Y' } else { b'N' }, WHITE);
+        framebuffer::print_byte(b'\n', WHITE);
+        return;
+    }
 
     if ata::detect_drive(0xB0) {
         framebuffer::print_str(b"Disk:   ATA Primary Slave\n", GREEN);
