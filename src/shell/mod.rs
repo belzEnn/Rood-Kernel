@@ -36,7 +36,6 @@ pub fn execute(input: &str) {
             framebuffer::print_str(b"Unknown command: ", RED);
             framebuffer::print_str(cmd.as_bytes(), RED);
             framebuffer::print_byte(b'\n', WHITE);
-            framebuffer::print_str(b"Type 'help' for commands\n", WHITE);
         }
     }
 }

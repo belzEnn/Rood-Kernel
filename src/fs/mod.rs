@@ -169,12 +169,24 @@ pub unsafe fn init() {
     NODES = Some(Vec::new());
     CWD = 0;
 
-    // Try loading from disk
-    if ata::detect_drive(0xA0) || ata::detect_drive(0xB0) {
-        if load() {
-            return; // Loaded from disk
-        }
+    if ata::detect_drive(0xB0) {
+        ata::set_active_drive(0xB0);
+    } else if ata::detect_drive(0xA0) {
+        ata::set_active_drive(0xA0);
+
+
+    if load() {
+        return;
     }
+
+    // Disk found but not formatted
+    nodes().push(Node {
+        name:      String::from("/"),
+        node_type: NodeType::Dir,
+        data:      Vec::new(),
+        parent:    0,
+    });
+    let _ = save();
     // Create root directory
     nodes().push(Node {
         name:      String::from("/"),
