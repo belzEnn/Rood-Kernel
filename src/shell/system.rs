@@ -1,68 +1,46 @@
-// uname, reboot, shutdown, diskinfo
+// System commands
 
-use crate::framebuffer::{self, WHITE, GREEN, RED};
+use crate::framebuffer::{self, WHITE, GREEN, RED, YELLOW};
 
-// OS version
-const OS_NAME:    &[u8] = b"Rood";
-const OS_VERSION: &[u8] = b"0.1.0";
-const OS_ARCH:    &[u8] = b"x86_64";
+const OS_NAME:    &str = "Rood";
+const OS_VERSION: &str = "0.1.0";
+const OS_ARCH:    &str = "x86_64";
 
-// System info
-pub unsafe fn uname() {
-    framebuffer::print_str(OS_NAME,    GREEN);
-    framebuffer::print_byte(b' ',      WHITE);
-    framebuffer::print_str(OS_VERSION, WHITE);
-    framebuffer::print_byte(b' ',      WHITE);
-    framebuffer::print_str(OS_ARCH,    WHITE);
-    framebuffer::print_byte(b'\n',     WHITE);
+pub fn uname() {
+    framebuffer::print_str(OS_NAME.as_bytes(),    GREEN);
+    framebuffer::print_byte(b' ',                 WHITE);
+    framebuffer::print_str(OS_VERSION.as_bytes(), WHITE);
+    framebuffer::print_byte(b' ',                 WHITE);
+    framebuffer::print_str(OS_ARCH.as_bytes(),    WHITE);
+    framebuffer::print_byte(b'\n',                WHITE);
 }
 
-// Reboot via PS/2 controller
-pub unsafe fn reboot() {
+pub fn reboot() {
     framebuffer::print_str(b"Rebooting...\n", RED);
-
-    // Wait for PS/2 buffer to be empty
-    loop {
-        let status: u8;
-        core::arch::asm!(
-            "in al, dx",
-            out("al") status,
-            in("dx") 0x64u16,
-            options(nomem, nostack)
-        );
-        if status & 0x02 == 0 { break; }
+    unsafe {
+        // Wait PS/2 buffer
+        loop {
+            let s: u8;
+            core::arch::asm!("in al, dx", out("al") s, in("dx") 0x64u16, options(nomem, nostack));
+            if s & 0x02 == 0 { break; }
+        }
+        core::arch::asm!("out dx, al", in("dx") 0x64u16, in("al") 0xFEu8, options(nomem, nostack));
+        loop { core::arch::asm!("hlt"); }
     }
-
-    // Send reset command
-    core::arch::asm!(
-        "out dx, al",
-        in("dx") 0x64u16,
-        in("al") 0xFEu8,
-        options(nomem, nostack)
-    );
-
-    loop { core::arch::asm!("hlt"); }
 }
 
-// Shutdown via QEMU port / Выключение через порт QEMU
-pub unsafe fn shutdown() {
+pub fn shutdown() {
     framebuffer::print_str(b"Shutting down...\n", RED);
-    core::arch::asm!(
-        "out dx, ax",
-        in("dx") 0x604u16,
-        in("ax") 0x2000u16,
-        options(nomem, nostack)
-    );
-    loop { core::arch::asm!("hlt"); }
+    unsafe {
+        core::arch::asm!("out dx, ax", in("dx") 0x604u16, in("ax") 0x2000u16, options(nomem, nostack));
+        loop { core::arch::asm!("hlt"); }
+    }
 }
 
-// Disk info
-pub unsafe fn diskinfo(args: [&[u8]; crate::shell::MAX_ARGS], argc: usize) {
+pub fn diskinfo(args: &[&str]) {
     use crate::drivers::disk::ata;
-    use crate::framebuffer::{self, WHITE, GREEN, RED, YELLOW};
 
-    // Check -v flag
-    let verbose = argc > 1 && args[1] == b"-v";
+    let verbose = args.first() == Some(&"-v");
 
     if verbose {
         let status = crate::drivers::port::PortRead::<u8>::new(0x1F7).read();
@@ -81,16 +59,15 @@ pub unsafe fn diskinfo(args: [&[u8]; crate::shell::MAX_ARGS], argc: usize) {
     }
 
     if ata::detect_drive(0xB0) {
-        framebuffer::print_str(b"Disk:   ATA Primary Slave\n", GREEN);
-        framebuffer::print_str(b"Status: OK\n", GREEN);
+        framebuffer::print_str(b"Disk:   ATA Primary Slave\n",  GREEN);
+        framebuffer::print_str(b"Status: OK\n",                  GREEN);
     } else if ata::detect_drive(0xA0) {
         framebuffer::print_str(b"Disk:   ATA Primary Master\n", GREEN);
-        framebuffer::print_str(b"Status: OK\n", GREEN);
+        framebuffer::print_str(b"Status: OK\n",                  GREEN);
     } else {
         framebuffer::print_str(b"No disk detected\n", RED);
         return;
     }
-
-    framebuffer::print_str(b"FS:     persistent (ROOD format)\n", YELLOW);
-    framebuffer::print_str(b"Sector: 512 bytes\n", WHITE);
+    framebuffer::print_str(b"FS:     ROOD format\n",   YELLOW);
+    framebuffer::print_str(b"Sector: 512 bytes\n",     WHITE);
 }

@@ -1,13 +1,13 @@
-use alloc::string::{String, ToString}; // Трейт ToString нужен для метода .to_string()
 use alloc::vec::Vec;
+use alloc::string::{String};
+use alloc::string::ToString;
 use crate::drivers::disk::ata;
-
 
 // Format constants
 
 const MAGIC:         [u8; 4] = *b"ROOD"; // Magic number
-const HEADER_SECTOR: u32 = 2048; // After EFI partition
-const DATA_SECTOR:   u32 = 2049;
+const HEADER_SECTOR: u32     = 1;        // Header sector
+const DATA_SECTOR:   u32     = 2;        // First data sector
 const MAX_NAME:      usize   = 64;       // Max name length
 const MAX_DATA:      usize   = 435;      // Max data per sector
 
@@ -45,12 +45,14 @@ fn serialize_node(node: &Node, buf: &mut [u8; ata::SECTOR_SIZE]) {
     // Type
     buf[0] = node.node_type as u8;
 
+    // Parent (u32 LE)
     let p = node.parent as u32;
     buf[1] = (p & 0xFF) as u8;
     buf[2] = ((p >> 8)  & 0xFF) as u8;
     buf[3] = ((p >> 16) & 0xFF) as u8;
     buf[4] = ((p >> 24) & 0xFF) as u8;
 
+    // Name
     let name = node.name.as_bytes();
     let name_len = name.len().min(MAX_NAME) as u32;
     buf[5] = (name_len & 0xFF) as u8;
@@ -105,6 +107,8 @@ fn deserialize_node(buf: &[u8; ata::SECTOR_SIZE]) -> Node {
 
 pub unsafe fn save() -> Result<(), &'static str> {
     let ns = nodes();
+
+    // Write header
     let mut header = [0u8; ata::SECTOR_SIZE];
     header[0..4].copy_from_slice(&MAGIC);
     let count = ns.len() as u32;
@@ -112,16 +116,7 @@ pub unsafe fn save() -> Result<(), &'static str> {
     header[5] = ((count >> 8)  & 0xFF) as u8;
     header[6] = ((count >> 16) & 0xFF) as u8;
     header[7] = ((count >> 24) & 0xFF) as u8;
-
-    // Write header
     ata::write_sector(HEADER_SECTOR, &header)?;
-
-    // Re-read and verify magic
-    let mut verify = [0u8; ata::SECTOR_SIZE];
-    ata::read_sector(HEADER_SECTOR, &mut verify)?;
-    if &verify[0..4] != &MAGIC {
-        return Err("Write verify failed");
-    }
 
     // Write nodes
     for (i, node) in ns.iter().enumerate() {
@@ -136,13 +131,15 @@ pub unsafe fn save() -> Result<(), &'static str> {
 // Load filesystem from disk
 
 pub unsafe fn load() -> bool {
+    //  Read header
     let mut header = [0u8; ata::SECTOR_SIZE];
     if ata::read_sector(HEADER_SECTOR, &mut header).is_err() {
         return false;
     }
 
+    // Check magic
     if &header[0..4] != &MAGIC {
-        return false;
+        return false; // Disk not formatted
     }
 
     // Read node count
@@ -168,26 +165,17 @@ pub unsafe fn load() -> bool {
 
 // Init
 
-pub unsafe fn init() {  
-    if ata::detect_drive(0xB0) {
-        ata::set_active_drive(0xB0);
-    } else if ata::detect_drive(0xA0) {
-        ata::set_active_drive(0xA0);
-    }
+pub unsafe fn init() {
     NODES = Some(Vec::new());
     CWD = 0;
 
-    let master = ata::detect_drive(0xA0);
-    let slave  = ata::detect_drive(0xB0);
-
-
-    if master || slave {
+    // Try loading from disk
+    if ata::detect_drive(0xA0) || ata::detect_drive(0xB0) {
         if load() {
-            return;
+            return; // Loaded from disk
         }
-    } else {
     }
-
+    // Create root directory
     nodes().push(Node {
         name:      String::from("/"),
         node_type: NodeType::Dir,
@@ -195,9 +183,8 @@ pub unsafe fn init() {
         parent:    0,
     });
 
+    // Save if disk available
     let _ = save();
-    Err(e) => {
-    }
 }
 
 // Public API
