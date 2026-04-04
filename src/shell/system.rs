@@ -71,3 +71,40 @@ pub fn diskinfo(args: &[&str]) {
     framebuffer::print_str(b"FS:     ROOD format\n",   YELLOW);
     framebuffer::print_str(b"Sector: 512 bytes\n",     WHITE);
 }
+
+// System uptime
+pub fn uptime() {
+    use crate::framebuffer::{self, WHITE};
+
+    let secs  = crate::interrupts::uptime_secs();
+    let hours = secs / 3600;
+    let mins  = (secs % 3600) / 60;
+    let s     = secs % 60;
+
+    print_num(hours);
+    framebuffer::print_str(b"h ", WHITE);
+    print_num(mins);
+    framebuffer::print_str(b"m ", WHITE);
+    print_num(s);
+    framebuffer::print_str(b"s\n", WHITE);
+}
+
+// Print number
+fn print_num(n: u64) {
+    use crate::framebuffer::{self, WHITE};
+    if n == 0 {
+        framebuffer::print_byte(b'0', WHITE);
+        return;
+    }
+    let mut buf = [0u8; 20];
+    let mut len = 0;
+    let mut n = n;
+    while n > 0 {
+        buf[len] = b'0' + (n % 10) as u8;
+        len += 1;
+        n /= 10;
+    }
+    for i in (0..len).rev() {
+        framebuffer::print_byte(buf[i], WHITE);
+    }
+}

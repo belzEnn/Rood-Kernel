@@ -12,6 +12,7 @@ pub fn help() {
     framebuffer::print_str(b"  reboot             - reboot\n", WHITE);
     framebuffer::print_str(b"  shutdown           - power off\n", WHITE);
     framebuffer::print_str(b"  diskinfo [-v]      - disk info\n", WHITE);
+    framebuffer::print_str(b"  uptime\n", WHITE);
     framebuffer::print_str(b"=== Display ===\n", YELLOW);
     framebuffer::print_str(b"  color <r> <g> <b> [text]\n", WHITE);
     framebuffer::print_str(b"=== Filesystem ===\n", YELLOW);

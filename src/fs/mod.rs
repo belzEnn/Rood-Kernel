@@ -173,7 +173,7 @@ pub unsafe fn init() {
         ata::set_active_drive(0xB0);
     } else if ata::detect_drive(0xA0) {
         ata::set_active_drive(0xA0);
-
+    }
 
     if load() {
         return;

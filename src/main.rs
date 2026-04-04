@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(alloc_error_handler)]
+#![feature(abi_x86_interrupt)]
 
 extern crate alloc;
 
@@ -9,12 +10,13 @@ mod framebuffer;
 mod fs;
 mod shell;
 mod drivers;
+mod interrupts;
 
 use bootloader_api::{entry_point, BootInfo};
 use core::panic::PanicInfo;
 use framebuffer::{WHITE, YELLOW};
 use drivers::input::ps2::{self, HandleResult};
-use drivers::disk::ata;
+use drivers::dfisk::ata;
 
 entry_point!(kernel_main);
 
@@ -30,6 +32,7 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
             info.stride, info.bytes_per_pixel,
             info.pixel_format,
         );
+        interrupts::init();
         fs::init();
     }
 

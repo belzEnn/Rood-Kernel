@@ -32,6 +32,7 @@ pub fn execute(input: &str) {
         "rm"       => files::rm(&argv),
         "cat"      => files::cat(&argv),
         "write"    => files::write(&argv),
+        "uptime"   => system::uptime(),
         _ => {
             framebuffer::print_str(b"Unknown command: ", RED);
             framebuffer::print_str(cmd.as_bytes(), RED);
